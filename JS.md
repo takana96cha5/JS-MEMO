@@ -486,17 +486,296 @@ class TextAnimation {
         this.chars = this.el.innerHTML.trim().split("");
         this.el.innerHTML = this._splitText();
     }
-    _splitText() {
+    _splitText() { // private メソッドは _ のプレフィックスを付ける
         return this.chars.reduce((acc, curr) => {
             curr = curr.replace(' ', '&nbsp;');
             return `${acc}<span class="char">${curr}</span>`
         }, "");
+    }
+    animate() {
+        this.el.classList
     }
 }
 
 document.addEventListner('DOMContentLoaded', function () {
     const ta = new TextAnimation('.animate-title');
     const ta2 = new TextAnimation('.animate-title2');
+});
+
+
+```
+
+addEventListner などで、オブジェクトのメソッドを関数として渡してあげたい場合の記述方法
+
+```js
+class TextAnimation {
+    constructor(el) {
+        this.el = document.querySelector(el);
+        this.chars = this.el.innerHTML.trim().split("");
+        this.el.innerHTML = this._splitText();
+    }
+
+    _splitText() {
+        return this.chars.reduce((acc, curr) => {
+            curr = curr.replace(' ', '&nbsp;');
+            return `${acc}<span class="char">${curr}</span>`
+        }, "");
+    }
+
+    // _that による参照 window 関数内では this を参照できないが animate 関数内で _that という変数に持たせてやると参照可能
+    animate() {
+        const _that = this;
+        window.setTimeout(function (_that) {
+            console.log(_that);
+            _that.elclassList.toggle('inview');
+        });
+    }
+
+    // bind を用いた this の束縛
+    animate() {
+        window.setTimeout(function () {
+            console.log(this);
+            this.elclassList.toggle('inview');
+        }.bind(this));
+    }
+}
+
+// ボタンクリックに合わせた this の束縛
+document.addEventListner('DOMContentLoaded', function () {
+    const btn = document.querySelecter('#btn');
+    const ta  = new TextAnimation('.animation-title');
+    const ta2 = new TextAnimation('.animation-title-2');
+    ta.animate();
+    ta2.animate();
+    btn.addEventListener('click', ta.animate.bind(ta));
+    // ta.animationのようにメソッドを渡す場合だと直近の ta は無視されて、直近以外で一番近いオブジェクトである btn が参照された状態になり、ta.animate.bind(ta) とすることで ta を参照することができる。
+    // また、以下のように bind を使わず、無名関数を用いた書き方もできる。
+    // この書き方だと ta のメソッドで実行されていると認識され this は ta を指す。
+    btn.addEventListener('click', function() {
+        ta.animate();
+    });
+});
+
+```
+
+Class と Object(連想配列)
+
+```js
+const obj = {
+    first_name: 'Tarou',
+    last_name:  'Tanaka',
+    printFullName: function() {
+        console.log('hello');
+    }
+}
+
+console.log(obj.first_name);
+console.log(obj.last_name);
+obj.printFullName();
+
+class MyObj {
+    constructor() {
+        this.first_name = 'Tarou';
+        this.last_name = 'Tanaka';
+        }
+
+    printFullName() {
+        console.log(`${this.first_name},${this.last_name}`); // ここで呼び出された this は MyObj になる
+        window.setTimeout(function() {
+            console.log(this); // ここで呼び出された this は window になる。
+            // this が指すオブジェクトは関数の名前空間の階層をどんどん上がっていったときに一番最初に見つかるオブジェクトである。
+            // this は function を呼んだ時の . の前についているオブジェクトを指している
+        })
+    }
+}
+
+const obj2 = new MyObj();
+obj2.printFullName();
+obj2.__proto__.printFullName();
+// 上記2つのメソッドの実行結果は同じになる クラスで定義したメソッドは __proto__ に格納され、メソッドを呼び出すとブラウザが __proto__ 内の呼び出し名に一致するメソッドを自動的に呼び出してくれる実装になっている
+
+```
+
+this と bind の関係
+
+```js
+const obj = {
+    first_name:    "Tarou",
+    first_last:    "Tanaka",
+    printFullName: function() {
+        console.log(this); // this は obj
+
+        window.setTimeout(function() {
+            console.log(this); // this は window
+        })
+    }
+}
+
+// _that を使って window オブジェクトの関数内で obj オブジェクトを参照する方法
+const obj = {
+    first_name:    "Tarou",
+    first_last:    "Tanaka",
+    printFullName: function() {
+        console.log(this); // this は obj
+        const _that = this;
+
+        window.setTimeout(function() {
+            console.log(_that); // _that は obj
+        })
+    }
+}
+
+// bind を使って window オブジェクトの this を bind 関数の引数に束縛することができる
+const obj = {
+    first_name:    "Tarou",
+    first_last:    "Tanaka",
+    printFullName: function() {
+        console.log(this); // this は obj
+        const _that = this;
+
+        window.setTimeout(function() {
+            console.log(this); // this は bind の引数 _that で obj
+        }.bind(_that));
+    }
+}
+
+```
+
+jsの継承
+
+```js
+class TextAnimation {
+    constructor(el) {
+        this.el = document.querySelector(el);
+        this.chars = this.el.innerHTML.trim().split("");
+        this.el.innerHTML = this._splitText();
+    }
+
+    _splitText() {
+        return this.chars.reduce((acc, curr) => {
+            curr = curr.replace(' ', '&nbsp;');
+            return `${acc}<span class="char">${curr}</span>`
+        }, "");
+    }
+
+    // _that による参照 window 関数内では this を参照できないが animate 関数内で _that という変数に持たせてやると参照可能
+    animate() {
+        const _that = this;
+        window.setTimeout(function (_that) {
+            console.log(_that);
+            _that.elclassList.toggle('inview');
+        });
+    }
+
+    // bind を用いた this の束縛
+    animate() {
+        window.setTimeout(function () {
+            console.log(this);
+            this.elclassList.toggle('inview');
+        }.bind(this));
+    }
+}
+
+
+// TextAnimation を継承した TextAnimation2 を定義
+class TextAnimation2 extends TextAnimation {
+    constructor(el) {
+        super(el); // 親のコンストラクターを呼び出す
+        this.el2 = "hoge"; // 子クラス独自のコンストラクターを定義
+    }
+}
+```
+
+js を使ってアニメージョンを組む (GreenSock TweenMax)
+
+```html
+<div id="container">
+    <div class="tween-animate-title">
+        PLAY ANIMATION
+    </div>
+</div>
+<script src-"TweenMax.min.js"></script>
+```
+
+```scss
+.tween-animate-title {
+    // position: absolute;
+    // top: 50%;
+    // left: 50%;
+    // transform: translate(-50%, -50%);
+    color: white;
+    opacity: 0;
+    font-size: 2em;
+
+    &.inview {
+        opacity: 1;
+
+        & .char {
+            display: inline-block;
+        }
+    }
+    & .char{
+        opacity: 0;
+    }
+}
+.animate-title.inview .char {
+
 };
+```
+
+```js
+class TextAnimation {
+    constructor(el) {
+        this.DOM = {}; // DOM 格納用のオブジェクトを定義
+        this.DOM.el = document.querySelector(el);
+        this.chars = this.DOM.el.innerHTML.trim().split(""); // chars が DOM でないことがすぐに分かる
+        this.DOM.el.innerHTML = this._splitText();
+    }
+
+    _splitText() {
+        return this.chars.reduce((acc, curr) => {
+            curr = curr.replace(' ', '&nbsp;');
+            return `${acc}<span class="char">${curr}</span>`
+        }, "");
+    }
+
+    // _that による参照 window 関数内では this を参照できないが animate 関数内で _that という変数に持たせてやると参照可能
+    animate() {
+        const _that = this;
+        window.setTimeout(function (_that) {
+            console.log(_that);
+            _that.elclassList.toggle('inview');
+        });
+    }
+
+    // bind を用いた this の束縛
+    animate() {
+        window.setTimeout(function () {
+            console.log(this);
+            this.elclassList.toggle('inview');
+        }.bind(this));
+    }
+}
+
+class TweenTextAnimation extends TextAnimation {
+    constructor(el) {
+        super(el);
+        this.DOM.chars = this.DOM.el.querySelectorAll('.char')
+    }
+
+    animate() {
+        this.DOM.el.classList.add('inview');
+        this.DOM.chars.forEach((c, i) => {
+            // 引数は DOM, アニメーションの間隔, アニメーションの詳細を記述したオプション
+            TweenMax.to(c, .6, {
+                ease: Back.easeOut,
+                delay: i * .05,
+                startAt: { y: '-50%', opacity:0},
+                y: '0%',
+                opacity: 1
+            });
+        });
+    }
+}
 
 ```
