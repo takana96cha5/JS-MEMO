@@ -2577,7 +2577,7 @@ for(let value of it) {
 }
 ```
 
-PubSub パターン
+## PubSub パターン
 
 ```js
 /**
@@ -2691,7 +2691,55 @@ class MyLibrary {
 
 ### ブラウザとJavaScript
 
+スレッドとは連続して実行される一本の処理
+
+```txt
+イメージ
+-A-B-C->
+```
+
+スレッドの種類
+
+- Main Thread
+- Service Worker
+- Web Worker
+
+メインスレッドでは JavaScript のコードの実行 と レンダリング(画面描画処理) の2つの処理を行う。
+
+JavaScript -> レンダリング
+
+FPS とは Frames Per Second の略で 一秒当たりの画面(フレーム)更新頻度
+
+60fps(1秒間に60回の画面更新 = 16.7m 秒 / 更新) で人間の目には違和感なくスムーズに映像が流れる
+
 ### 同期処理と非同期処理
+
+同期処理ではメインスレッドでコードが順番に実行される。
+
+同期処理では1つの処理が完了するまでは次の処理には進まない
+
+非同期処理では一時的にメインスレッドから処理が切り離されることで、後続の処理を実行したりクリックイベントを受け取ったりすることができる、その後、切り離された処理がメインスレッドに戻ってくる
+
+非同期処理
+
+```js
+// 引数の秒数だけスレッドを占有する同期処理
+function sleep(ms) {
+    const startTime = new Date();
+  while (new Date() - startTime < ms);
+  console.log('sleep done');
+}
+
+const btn = document.querySelector('button');
+btn.addEventListener('click', function(){
+    console.log('button clicked');
+});
+
+// 第2引数の秒数だけスレッドを占有する 非同期処理
+setTimeout(function() {
+    sleep(3000)
+}, 2000)
+```
 
 ### タスクキューとコールスタック
 
