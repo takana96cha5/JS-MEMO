@@ -1,4 +1,4 @@
-# Java Script メモ
+# Java Script メモ 緩い版
 
 変数定義
 

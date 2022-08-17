@@ -1,4 +1,4 @@
-# JSのメモ
+# JSのメモ ガチのやつ
 
 ## 前提知識
 
@@ -1572,7 +1572,11 @@ console.log(b);
 
 シンボル: プロパティの重複を避けるために、必ず一意の値を返す関数
 
-シンボルがES6 から導入された経緯は、ES5 の時点で開発者が`String.prototype.iterator`という独自の関数を定義していたと仮定します。このようなビルドインオブジェクトの拡張はprototype汚染と呼ばれ推奨されていません。この状態でES6に上がったタイミングで `prototype.iterator` というビルドインオブジェクトが追加された場合は競合を起こして意図した動作にならないということが容易に考えられます。ここで考え出されたのがシンボルを使ったプロパティの格納と取得になります。シンボルを使い一意なプロパティやメソッドを定義することで既存の実装に影響を与えず後方互換性を担保することができます。
+シンボルがES6 から導入された経緯は、ES5 の時点で開発者が`String.prototype.iterator`という独自の関数を定義していたと仮定します。
+このようなビルドインオブジェクトの拡張はprototype汚染と呼ばれ推奨されていません。
+この状態でES6に上がったタイミングで `prototype.iterator` というビルドインオブジェクトが追加された場合は競合を起こして意図した動作にならないということが容易に考えられます。
+ここで考え出されたのがシンボルを使ったプロパティの格納と取得になります。
+シンボルを使い一意なプロパティやメソッドを定義することで既存の実装に影響を与えず後方互換性を担保することができます。
 
 ```JS
 const s = Symbol('hello'); // new は用いないことに注意
@@ -1590,7 +1594,9 @@ String.prototype.iterator = function() {
 
 ### プロパティーとディスクリプター
 
-オブジェクトを定義した際は各プロパティには値である Value をセットすることになります。プロパティは値以外にも設定値を保持していて、それがディスクリプタと呼ばれています。ディスクリプタによってプロパティがとる挙動を制御することができます。
+オブジェクトを定義した際は各プロパティには値である Value をセットすることになります。
+プロパティは値以外にも設定値を保持していて、それがディスクリプタと呼ばれています。
+ディスクリプタによってプロパティがとる挙動を制御することができます。
 
 - プロパティ
   - 値
@@ -2086,7 +2092,9 @@ while(v = array[i++]) { // 配列内に falsy な値(例: 0)が入っている�
 
 列挙可能性とはディスクリプタの持つ enumerable という設定値のこと
 
-for ... in: 列挙可能プロパティに対して順不同で反復処理を実行する。 また、プロトタイプチェーンも列挙対象となので、自分自身に設定されているプロパティのみを列挙したい場合は、Object.hasOwnProperty()を使うと良い。Symbol で定義下プロパティは for ... in で列挙対象にならない
+for ... in: 列挙可能プロパティに対して順不同で反復処理を実行する。
+また、プロトタイプチェーンも列挙対象となので、自分自身に設定されているプロパティのみを列挙したい場合は、Object.hasOwnProperty()を使うと良い。
+Symbol で定義下プロパティは for ... in で列挙対象にならない
 
 ```js
 const obj = {
@@ -2718,9 +2726,18 @@ FPS とは Frames Per Second の略で 一秒当たりの画面(フレーム)更
 
 同期処理では1つの処理が完了するまでは次の処理には進まない
 
-非同期処理では一時的にメインスレッドから処理が切り離されることで、後続の処理を実行したりクリックイベントを受け取ったりすることができる、その後、切り離された処理がメインスレッドに戻ってくる
+非同期処理では一時的にメインスレッドから処理が切り離されることで、後続の処理を実行したりクリックイベントを受け取ったりすることができる。
+その後、切り離された処理がメインスレッドに戻ってくる
 
-非同期処理
+つまり、非同期処理は実行に時間がかかる重い処理の完了を待たずに他の処理を進めることができる
+
+async await を使うのが一般的であったが、ES20 から Top level await が登場し、HTMLの呼び出し時に
+
+```html
+<script type="module" src="src/index.js"></script>
+```
+
+と書くことで Top level await が使用できる
 
 ```js
 // 引数の秒数だけスレッドを占有する同期処理
@@ -2743,60 +2760,1304 @@ setTimeout(function() {
 
 ### タスクキューとコールスタック
 
+タスクキュー: 実行待ちの非同期処理の行列。 -> 非同期処理の実行準を管理
+
+キューの仕組みを「先入れ先出し」という。 -> FIFO(First In, First Out)
+
+非同期処理の実行を確認
+
+コールスタックに渡されているコンテキストから順番に処理される
+
+処理待ち状態のタスクはタスクキューに積まれている
+
+イベントループ: 簡単にいうとコールスタック監視用の無限ループ
+
+イベントループがコールスタックにコンテキストが積まれているかというのを定期的に確認し、積まれていなければ「コールスタックが空いている状態です」とタスクキューに通知することになります。
+その通知を受け取ったタスクキューがコールスタックにタスクを渡すといった仕組みになっています。
+
+つまりタスクキューに入った順番で非同期処理が実行されます
+
+メインスレッドが占有されている状態とはコールスタックにコンテキストが積まれている状態と同じ意味になる
+
 ### コールバック関数と非同期処理
 
 ### 非同期処理のチェーン
+
+コールバック地獄は読むのがつらい -> プロミス構文だと読みやすい
+
+非同期で渡された処理はコールバックが空になったタイミングで実行される
+
+Promise構文
+
+```js
+new Promise(function(resolve, reject){
+    resolve("hello"); // 処理成功時に呼ばれる
+    reject("bye"); // 処理失敗時に呼ばれる
+
+}).then(function(data) {
+    console.log(data) // -> "hello"  // 処理成功時に呼ばれる
+
+}).catch(function(data) {
+    console.log(data) // -> "bye"  // 処理失敗時に呼ばれる
+
+}).finally(function() { // finally は引数を取れない
+    console.log("終了処理"); // -> "終了処理"  // 終了時に必ず実行される
+
+});
+```
+
+```js
+new Promise(
+    // 同期処理
+).then(
+    // 非同期処理 (resolve を待つ)
+).catch(
+    // 非同期処理 (reject を待つ)
+).finally(
+    // 非同期処理 (then、またはを待つ)
+);
+
+```
+
+```js
+new Promise(function(resolve, reject){
+    resolve("hello"); // resolve の引数は次の then の引数になる
+}).then(function(data) {
+    console(data); // -> "hello"
+    return data; // then 内の return で返される値は次の then の引数になる
+}).then(function(data) {
+    console(data); // -> "hello"
+    return data; // then 内の return で返される値は次の then の引数になる
+}).then(function(data) {
+    console(data); // -> "hello"
+    return data; // finally に引数を渡すことはできない
+}).finally(function() { // finally は引数を取れない
+});
+
+```
+
+```js
+new Promise(function(resolve, reject){
+    reject("bye");
+}).catch(function(data) {
+
+});
+```
 
 ### Promise
 
 ### Promiseチェーン
 
+Promise を使って複数の非同期処理を順次実行すること
+
+```js
+function sleep(val) {
+    return new Promise(function(resolve) {
+    setTimeout(function() {
+        console.log(val++);
+        resolve(val);
+    }, 1000);
+    });
+}
+
+// Promise チェーンにはインスタンスを返す
+sleep(0).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+})
+
+```
+
 ### Promise と 並列処理
 
-### Macrotasks と Microtasks
+並列処理を使うとプログラムの待機時間を短くすることができる
+
+```js
+function sleep(val) {
+    return new Promise(function(resolve) {
+    setTimeout(function() {
+        console.log(val++);
+        resolve(val);
+    }, val * 500);
+    });
+}
+
+// 並列処理 には Promise.all を使う
+Promise.all([sleep(2), sleep(3), sleep(4)])
+.then(function(data) {
+    console.log(data);
+});
+
+sleep(0).then(function(val) {
+    return Promise.all([sleep(2), sleep(3), sleep(4)])
+}).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+}).then(function(val) {
+    return sleep(val);
+})
+```
+
+```js
+Promise.race([sleep(2), sleep(3), sleep(4)])
+.then(function(data) {
+    console.log(data);
+})
+```
+
+```js
+Promise.allSettled([sleep(2), sleep(3), sleep(4)])
+.then(function(data) {
+    console.log(data);
+}).catch(function(e) {
+    conosle.error(e);
+});
+
+// allSettled で status(状態)を確認できる fulfilled rejected
+```
+
+### Macrotasks(マクロタスク) と Microtasks(マイクロタスク)
+
+マクロタスクとは、これまでのレクチャーでタスクキューと呼んでいたもの。
+
+マイクロタスクとは、タスクキューとは別で存在する非同期処理の待ち行列。 -> ジョブキューと呼ばれる
+
+1. Macrotasks から1個タスクを受け取り処理をする
+2. Microtasks から全てのタスクを受け取り処理をする
+3. 必要があれば描画に関連する処理を行う requestAnimationFrame レンダリング
+
+マクロタスク(タスクキュー): スクリプト実行, setTimeout, I/O, Network, Mouse, Keyboard
+
+マイクロタスク(ジョブキュー): Promise
+
+```js
+setTimeout(function task1() {
+    console.log('task1');
+});
+
+new Promise(function promise(resolve) {
+    console.log('promise');
+    resolve();
+}).then(function job1() {
+    console.log('job1');
+});
+
+console.log('grobal end');
+```
+
+コールスタック: 処理を実行
+
+非同期API: 非同期処理が待機
+
+イベントループ: キューを監視
+
+MicroTasks(ジョブキュー): 待ちジョブが待機するキュー
+
+MacroTasks(タスクキュー): 待ちタスクが待機するキュー
+
+コールスタックのグローバルコンテキストから setTimeout(task1) が 非同期API に呼び出されます。この setTimeout は MacroTasks(タスクキュー) に task1 を登録します。次にコールスタックに Promise という関数が呼ばれまして、Promise の .then メソッド(job1) が非同期処理として待機することになります。ここですぐさま resolve が呼ばれますので、このタイミングで MicroTasks(ジョブキュー) に job1 が登録されます。コールスタックがの処理が終了すると、イベントループが MicroTasks(ジョブキュー) にジョブがないかを確認します。ここでは job1 が見つかるので job1 がコールスタックでまず実行されます。この時点では MicroTasks(ジョブキュー) にジョブはありませんので、次に実行されるのは MacroTasks(タスクキュー) に登録されている task1 となります。MicroTasks(ジョブキュー) と MacroTasks(タスクキュー) が同じイベントのループで発見された場合は必ず MicroTasks(ジョブキュー) の方から先に実行されます。
+
+MicroTasks(ジョブキュー): 順番が回ってきたら全てのジョブを実行
+
+MacroTasks(タスクキュー): 順番が回ってきたら1つずつタスクを実行
+
+実行の流れを整理するとコールスタックの処理が全て実行されたら、 MicroTasks(ジョブキュー) の処理が全てコールスタックに移された後実行される。その後、 MacroTasks(タスクキュー) の処理が1つだけコールスタックに移された後に実行される。 MacroTasks(タスクキュー) の処理が1つだけ実行された後は、再度、MicroTasks(ジョブキュー) の処理が全て実行される。その後、MacroTasks(タスクキュー) の処理が1つだけ実行され、このループを繰り返す。
+
+代表的な関数
+
+MacroTasks(タスクキュー): setTimeout setInterval requestAnimationFrame
+
+MicroTasks(ジョブキュー): Promise queueMicrotask MutationObserver
+
+```js
+new Promise(function promise(resolve) {
+    console.log('promise');
+
+    setTimeout(function task1() {
+        console.log('task1');
+        resolve();
+    });
+}).then(function job1() {
+    console.log('job1');
+});
+
+console.log('grobal end');
+
+```
+
+上記のスクリプトを実行したときのブラウザの動きを追っていきます。
+まず、コールスタックにグローバルコンテキストが詰まれ promise が実行されます。
+promise が実行されたことで、 promise の中で setTimeout が非同期API で呼ばれます。
+setTimeout のコールバック関数の中の task1 と Promise のコールバック関数である resolve が呼ばれます。
+これと併せて Promise の .thenメソッドのコールバック関数である job1 が 非同期APIで resolve の実行を待ちます。
+setTimeout のコールバック関数である task1 が MacroTasks(タスクキュー) に格納されます。
+そして,コールスタックの処理が掃けると, MicroTasks(ジョブキュー) に何も登録されていないことから,
+MacroTasks(タスクキュー) から task1 がコールスタックに移動することになります.
+この task1 は resolve を保持しているので、 この resolve が実行されたときに 非同期APIで resolve の実行を待っていた .then メソッドが呼ばれ, job1 が MicroTasks(ジョブキュー) に登録されます。
+そしてコールタックの resolve と task1 が掃けると、次は job1 がコールスタックに上がってくるため、一番最後に job1 が呼ばれることになります。
+
+```js
+new Promise(function promise(resolve) {
+    console.log('promise');
+
+    setTimeout(function task1() {
+        console.log('task1');
+        resolve();
+    });
+
+}).then(function job1() {
+    console.log('job1');
+    setTimeout(function task2() {
+        console.log('task2');
+        resolve();
+
+        queueMicrotask(function job4() {
+            console.log('job4')
+        })
+    });
+
+    queueMicrotask(function job4() { // ミクロタスクを登録するメソッド
+        console.log('job4')
+    })
+
+}).then(function job2() {
+    console.log('job2');
+}).then(function job3() {
+    console.log('job3');
+});
+
+console.log('grobal end');
+```
+
+非同期処理が含まれる上記のスクリプトを実行したときのブラウザの実行結果。
+
+```text
+promise      <- ミクロ
+grobal end
+task1        <- マクロタスク
+job1         <- ミクロタスク
+job4         <- ミクロタスク
+job2         <- ミクロタスク
+job3         <- ミクロタスク
+task2        <- マクロタスク
+
+```
 
 ### Await と Async
 
+ES8 から導入された Promise を さらに直感的に記述できるようにした構文。
+
+内部的には Promise と同じ挙動を取る
+
+Async: Promise を返却する関数の宣言を行う。つまり。Promise オブジェクトを返す。
+
+Await: Promise を返却する関数の非同期処理が完了するまで待つ制御を加えることができる。 Promise のインスタンスを受ける
+
+```js
+function sleep(val) {
+    return new Promise(function(resolve) {
+        setTimeout(function() {
+            console.log(val++);
+            resolve(val);
+        }, 1000);
+    });
+}
+
+async function init() {
+    // Promise オブジェクトに await を付けることで new Promise 内の resolve に渡された引数を返すことができる.
+    // await は async function 内でしか使うことができない
+    let val = await sleep(0); // 0
+    val = await sleep(val);   // 1
+    val = await sleep(val);   // 2
+    val = await sleep(val);   // 3
+    val = await sleep(val);   // 4
+    console.log(val)          // 5
+}
+
+// async function も Promise オブジェクトを返すので then メソッドを繋げることができる
+init();
+
+console.log(init());
+```
+
 ### fetch
+
+サーバー上から JSON 形式のデータを Promise オブジェクトとして取得することができる
+
+JSONは JavaScript の配列やオブジェクトで表現されたデータフォーマット方式
+
+JSON 特有のルール
+
+- シングルクオーテーションで囲むことができず必ずダブルクオーテーションを使用する必要があります
+- 必ずダブルクオーテーションで キー(プロパティ) を囲む必要があります
+- 格納されている要素の中で一番最後の要素の最後にカンマを付けてはいけません
+
+users.json
+
+```json
+[
+    {
+        "name": "Bob",
+        "age": 23
+    },
+    {
+        "name": "Tim",
+        "age": 30
+    }
+    {
+        "name": "Sun",
+        "age": 25
+    }
+]
+```
+
+main.js
+
+```js
+window.fetch('users.json') // window はグローバルオブジェクトなので省略可能
+
+fetch('users.json').then(function(response) {
+    console.log(response); // Response に通信結果などの状態が格納されている
+    return response.json();
+    }).then(function(json) {
+        console.log(json);
+        for (const user of json) {
+            console.log(`I'm ${user.name}, ${user.age} years old`)
+        }
+    })
+```
+
+```js
+async function fetchUsers() {
+    const response = await fetch('users.json');
+    if(response.ok) {
+    const json = await response.json();
+    if(!json.length) {
+        throw new NoDataError('no data found');
+    }
+    return json;
+    }
+};
+
+async function init() {
+    try {
+        const users = await fetchUsers();
+        for (const user of users) {
+            console.log(`I'm ${user.name}, ${user.age} years old`);
+        }
+    } catch(e) {
+        if (e instanceof NoDataError) {
+            console.error(e);
+        } else {
+            console.error('Oops, something went wrong')
+        }
+    } finally {
+        console.log('bye');
+    }
+    console.log('end');
+}
+
+// カスタムエラー 例外処理の中で条件分岐したい時などに使用する
+class NoDataError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'NoDataError'
+    }
+}
+
+init();
+```
 
 ### 例外処理とエラー
 
+例外処理: エラーが発生した際に飛ぶ特別な処理。
+
+```js
+try {
+    throw new Error()
+} catch(e) {
+    // エラーハンドリング
+} finally {
+    // 終了処理
+}
+
+```
+
+タイムラインの作成
+
+friendsOf1.json
+
+```json
+{
+  "friendIds": [2,3,4,5]
+}
+```
+
+message1432.json
+
+```json
+{
+  "userId": 2,
+  "message": "waiting at station."
+}
+```
+
+message1485.json
+
+```json
+{
+  "userId": 4,
+  "message": "how's it going?"
+}
+```
+
+message1687.json
+
+```json
+{
+  "userId": 5,
+  "message": "drink?"
+}
+```
+
+message1879.json
+
+```json
+{
+  "userId": 3,
+  "message": "go shopping?"
+}
+```
+
+user1.json
+
+```json
+{
+  "id": 1,
+  "name": "Bob",
+  "age": 20,
+  "latestMsgId": 1735
+}
+```
+
+user2.json
+
+```json
+{
+  "id": 2,
+  "name": "Tim",
+  "age": 30,
+  "latestMsgId": 1432
+}
+```
+
+user3.json
+
+```json
+{
+  "id": 3,
+  "name": "Sun",
+  "age": 25,
+  "latestMsgId": 1879
+}
+```
+
+user4.json
+
+```json
+{
+  "id": 4,
+  "name": "John",
+  "age": 50,
+  "latestMsgId": 1485
+}
+```
+
+user5.json
+
+```json
+{
+  "id": 5,
+  "name": "Sun",
+  "age": 10,
+  "latestMsgId": 1687
+}
+```
+
+user6.json
+
+```json
+{
+  "id": 6,
+  "name": "Emma",
+  "age": 80,
+  "latestMsgId": 1688
+}
+```
+
+main.js
+
+```js
+/**
+ * 問題：
+ * myFetch関数を使って以下の「データ取得の流れ」の通り、
+ * 順次JSONを取得し、取得したデータを加工して、
+ * 以下のメッセージをコンソールに表示してください。
+ *
+ * --Bob's timeline--
+ * Tim says: waiting at station.
+ * Sun says: go shopping?
+ * John says: how's it going?
+ * Sun says: drink?
+ *
+ ******************************
+ * データ取得の流れ
+ * １．"user1.json"を取得（Bobのユーザー情報取得）
+ *
+ * ２．"user1.json"のidの項目を元に
+ *     `friendsOf${id}.json`でフレンド一覧を取得
+ *
+ * ３．取得したフレンドのID（ユーザーID）を元に、
+ * 　　`user${id}.json`で各ユーザーの情報を取得
+ *
+ * ４．各ユーザー情報のlatestMsgIdが最後に投稿した
+ * 　　メッセージのIDになりますので、そのidを用いて
+ * 　　`message${friend.latestMsgId}.json`
+ * 　　を取得。
+ *
+ * １～４で取得したデータをもとにコンソールログに
+ * タイムラインの文字列を作成してください。
+ *
+ * ※await/asyncで記述してみてください。
+ */
+async function myFetch(fileName) { // JSON を取ってくるための関数
+    const response = await fetch(`../json/${fileName}`);
+    const json = await response.json();
+    return json;
+}
+
+(async function() { // 丸カッコを使って即時関数として定義
+    // 1. "user1.json"を取得(Bobのユーザー情報取得)
+    const me = await myFetch('user1.json');
+    console.log(`--${me.name}'s timeline--`);
+
+    // 2. "user1.json" の id の項目を元に `friendsOf${id}.json` でフレンド一覧を取得
+    const friendList = await myFetch(`friendsOf${me.id}.json`);
+
+    // 3. 取得したフレンドのID（ユーザーID）を元に、`user${id}.json`で各ユーザーの情報を取得
+    const friendIds = new Set(); // Promise.all で実行するため反復可能オブジェクトを定義
+    for(const id of friendList.friendIds) {
+        friendIds.add(myFetch(`user${id}.json`));
+    }
+    const friends = await Promise.all(friendIds);
+
+    // 4. 各ユーザー情報のlatestMsgIdが最後に投稿したメッセージの ID になりますので、そのidを用いて `message${friend.latestMsgId}.json` を取得。
+    const msgIds = new Set();
+    for(const friend of friends) {
+        msgIds.add(myFetch(`message${friend.latestMsgId}.json`));
+    }
+    const msgs = await Promise.all(msgIds);
+
+    for(const friend of friends) {
+        for(const msg of msgs) {
+            if(friend.id === msg.userId) {
+                console.log(`${friend.name} says: ${msg.message}`);
+            }
+        }
+    }
+})();
+
+```
+
 ## モジュラーJavaScript
+
+ES6 で導入されたモジュールの使い方
 
 ### ES Modules と CommonJS
 
+ソースコードを機能毎に分割して、メンテナンスしやすくする仕組み。
+
+モジュール管理の代表的なものに ESM と CJS が存在する。
+
+CommonJS(CJS) は Node.js 上でモジュールを管理する仕組みで require / exports という予約語を用いる
+
+ES Modules(ESM) は ECMAScript の仕様に基づいて、ブラウザ上でモジュールを管理する仕組みで import / export という予約語を用いる
+
+ESM vs CJS
+
+EJS
+
+- import/export
+- Browser
+- .mjs
+
+CJS
+
+- require/exports
+- Node.js
+- .cjs
+
 ### import と exxport
+
+Import は EJS 形式でのモジュールの読み込みに使用
+
+Exxport は EJS 形式でのモジュールの露出に使用
+
+html
+
+```html
+<script type="module" src="moduleB.js"></script>
+```
+
+moduleA.js
+
+```js
+export let publicVal = 0;
+
+export function publicFN() {
+    console.log('publicFn called: ')
+}
+
+```
+
+moduleB.js
+
+```js
+import { publicVal as val, publicFn as fn } from './moduleA.js';
+
+console.log(val);
+fn();
+```
+
+export default について
+
+moduleC.js
+
+```js
+export default 0;
+```
+
+moduleD.js
+
+```js
+import defaultVal, {} from './moduleC';
+console.log(defaultVal); // 0
+```
 
 ### ESModules と 即時関数
 
+ESModules と 即時関数 の動きは似ており、モジュールのインポートはモジュールにつき一回のみ実行される
+
+即時関数
+
+```js
+const moduleA = (function () {
+    console.log('IIFE called');
+
+    let privateVal = 1;
+    let publicVal = 10;
+
+    function publicFn() {
+        console.log('publicFn called: ' + privateVal++);
+    }
+
+    function privateFn() {
+
+    }
+
+    return {
+        publicFn,
+        publicVal
+    }
+})(); // 即時関数
+
+moduleA.publicFn()
+
+const moduleB = (function({ publicFn: fn, publicVal: val}) {
+    publicFn();
+    console.log(publicVal++);
+})(moduleA);
+```
+
+ESModules
+
+```js
+console.log('ESmodule called');
+
+let privateVal = 1;
+let publicVal  = 10;
+
+function publicFn() {
+    console.log('publicFn called: ' + privateVal++);
+};
+
+function privateFn() {};
+```
+
+```js
+import { publicFn as fn, public as val } from './moduleA'
+```
+
+プリミティブ型の値を外部から操作したい場合は参照を渡す必要があるため関数を通して変更する必要があります
+
 ### モジュールコンテキストとモジュールスコープ
+
+コンテキスト
+
+- グローバルコンテキスト -> モジュールコンテキスト(ESmodule を使った場合)
+- 関数コンテキスト
+- evalコンテキスト
+
+モジュールコンテキストでは this を使用することができない
+
+スコープ
+
+- グローバルスコープ
+- スクリプトスコープ -> モジュールスコープ(ESmodule を使った場合)
+- 関数スコープ
+- ブロックスコープ
+
+モジュールコンテキストについて
+
+A -> B : A は B に依存 (A が消えると B も消える)
+
+index.html -> moduleB.js -> moduleA.js
+
+moduleB.js
+
+```js
+import '/.moduleA.js'
+
+console.log(this) // undefined
+
+function fn() {
+    console.log(this) // undefined
+}
+fn();
+
+const obj = {
+    fn // {fn: f}
+}
+obj.fn()
+
+console.log(window)
+
+```
+
+moduleA.js
+
+```js
+window.d = 1;
+```
+
+モジュールスコープはこのファイル内で生成されるスコープ
 
 ### モジュールの特徴
 
+index.html
+
+```html
+<h1>Module Lecture</h1>
+
+<!-- モジュール機能に対応していないブラウザで実行した場合に警告を出す -->
+<script>alert('このブラウザには対応していません')</script>
+
+<!-- index.html -> main.js -->
+<script src='main.js' defer></script>
+<!-- defer を指定すると非同期で読込が走る。つまり、DOM の解析が終わった段階でスクリプトが読まれる -->
+
+<!-- index.html -> moduleB.js -->
+<script type="module" src='moduleB.js'></script>
+<!-- type="module" を指定するとファイルが自動的に Strict モードに設定され、モジュールファイルのスクリプトが非同期で読み込まれる -->
+```
+
+```js
+const h1 = document.querySelector('h1');
+const text = h1.textContent;
+console.log(text); // Module Lecture
+```
+
 ### Strictモード
+
+Strictモードとは、 通常の JavaScript で許容されている一部の書き方を制限する機能。
+
+Strictモードの目的
+
+- 意図しないバグの混入の防止
+- 将来使われるかもしれない予約語の確保
+- コードのセキュア化
+
+など
+
+Strictモードの有効化
+
+"use strict"
+
+ファイルの先頭、もしくは関数内の先頭行に記述する
+
+また、モジュールファイルはデフォルトで Strictモード が有効化されている
+
+```js
+'use strict'
+a = 0; // Strictモード だと let や const の記述がないためエラーになる この記述だと window.a に 0 が格納されてしまう。
+const implements, interface, package // Strictモードだと予約語に登録されているというエラーが発生する
+
+function fn() {
+    'use strict'；
+    b = 0;  // この記述だと window.b に 0 が格納されてしまう。
+    return this; // Strictモード の関数内で this を返すと undefined を返すように設計されている
+};
+fn();
+console.log(a);
+
+console.log(fn.call("3")); // 3  Strictモードではプリミティブ型の値をオブジェクトでラップぜずに返す。 もし、Strictモードで無かった場合は Number {3} というオブジェクトが返る
+```
 
 ### Strictモード と クラス
 
+クラスのコンストラクタやメソッドの中はデフォルトでStrictモードが有効化されている
+
+```js
+class C {
+    constructor() {
+        function fn() {
+            console.log(this); // undefined <- Strictモードが有効化されている
+        }
+        fn();
+    }
+
+    method() {
+        function fn() {
+            console.log(this); // undefined <- Strictモードが有効化されている
+        }
+        fn();
+    }
+}
+
+const c = new C();
+c.method();
+
+```
+
 ### ダイナミックインポート
+
+moduleA.js
+
+```js
+export let publicVal = 0;
+
+export function publicFn() {
+    console.log('publicFn called')
+}
+
+export default 1;
+```
+
+moduleB.js
+
+```js
+// 同期的なインポート
+import { publicVal, publicFn } from './moduleA.js';
+publicFn();
+
+// 非同期的なインポート import関数は Promise Object を返す
+import('./moduleA.js').then(function(modules) {
+    console.log(modules);
+    modules.publicFn();
+});
+
+// 非同期的なインポートを async await で書き換えた
+async function fn() {
+    const modules = await import('./moduleA.js');
+    console.log(modules);
+    module.publicFn();
+}
+
+```
+
+モジュール化
+
+calc.js
+
+```js
+/**
+ * 問題：
+ * 以下の即時関数をモジュール化してください。
+ * ※calcオブジェクトはmain.js内で行い、実行してください。
+ */
+let val = 0; // モジュールの内部変数
+
+export const calc = { // const calc = の部分は default に置き換えても良い
+    plus: function(target) {
+        const newVal = val + target;
+        console.log(`${val} + ${target} = ${newVal}`);
+        val = newVal;
+    },
+    minus: function(target) {
+        const newVal = val - target;
+        console.log(`${val} - ${target} = ${newVal}`);
+        val = newVal;
+    },
+    multiply: function(target) {
+        const newVal = val * target;
+        console.log(`${val} x ${target} = ${newVal}`);
+        val = newVal;
+    },
+    divide: function(target) {
+        const newVal = val / target;
+        console.log(`${val} / ${target} = ${newVal}`);
+        val = newVal;
+    },
+}
+```
+
+main.js
+
+```js
+import { calc } from './calc.js'; // default で定義されている場合は波カッコはいらない
+calc.plus(5);
+calc.minus(3);
+calc.multiply(3);
+calc.divide(2);
+```
 
 ## 様々なオブジェクト
 
 ### Proxy
 
+ES6 から導入されたプロパティの操作に独自の処理を追加するためのオブジェクト
+
+プロキシ経由で値を参照、変更することにより、独自の操作を追加することができます。
+
+```js
+const targetObj = { a: 0};
+const handler = {
+    // set や get や delete などの Object のプロパティに変更があった際に動くメソッドはトラップと呼ばれます。
+    // target(第一引数) には Proxy の第一引数で渡したオブジェクトが渡ってきます。
+    // prop(第二引数) にはプロパティにアクセスされた際のプロパティの名前が渡ってきます。
+    // value(第三引数)には set から渡ってきた新しい値が渡ってきます。
+    // receiver(第四引数)には Proxy Object が渡ってきます。
+    set: function(target, prop, value, receiver) { // 値の追加を検知
+        console.log(`[set]: ${prop}`);
+        target[prop] = value; // 値を格納する
+    },
+    // 値を受け取らないので value は定義されていない
+    get: function(target, prop, receiver) { // 値の参照を検知
+        console.log(`[get]: ${prop}`);
+        return target[prop]; // 値を取得する
+    },
+    deleteProperty: function(target, prop) {
+        console.log(`[delete]: ${prop}`);
+        delete target[prop]; // 値を削除する
+    }
+}
+const pxy = new Proxy(targetObj, handler)
+pxy.a = 1;     // [set]: a
+pxy.a ;        // [get]: a
+delete pxy.a   // [delete]: a
+
+```
+
+```js
+// Proxy を使って値の変更を許可しないような処理を追加
+set: function(target, prop, value, receiver) { // 値の追加を検知
+    console.log(`[set]: ${prop}`);
+    // target[prop] = value; // 値を格納する
+    throw new Error('cannot add prop.')
+},
+
+// Proxy を使って値の参照時に値が無かった場合は デフォルト値を返すような処理を追加
+get: function(target, prop, receiver) { // 値の参照を検知
+    if(target.hasOwnProperty(prop)) {
+        console.log(`[get]: ${prop}`);
+        return target[prop]; // 値を取得する
+    } else {
+        return -1;
+    }
+},
+
+```
+
 ### Reflect
+
+JS エンジンの内部の汎用的な関数を直接呼び出すためのメソッドが格納されているオブジェクト。
+
+| 内部メソッド | Reflect |
+| - | - |
+| [[Get]] | get |
+| [[Set]] | set |
+| [[Delete]] | deleteProperty |
+| [[Construct]] | construct |
+
+Reflect の目的
+
+1. 内部メソッドを呼び出す関数の格納場所
+2. Proxy と併せて使用するため
+
+内部メソッドを呼び出す関数の格納場所としての使用例
+
+```js
+class C {
+    constructor(a, b) {
+        this.a = a;
+        this.b = b;
+    }
+}
+
+const obj1 = new C(1, 2); // new C(1, 2) は Reflect.construct(C, [1, 2]) と同じ
+console.log(obj1);
+console.log('c' in obj1); // 'c' in obj1 は Reflect.has(obj1, 'c') と同じ
+
+Reflect.defineProperty // 失敗した際は false が返る
+```
+
+```js
+const bob = {
+    name: 'Bob',
+    _hello: function() {
+        console.log(`hello ${this.name}`);
+    }
+}
+
+const tom = {
+    name: 'Tom',
+    _hello: function() {
+        console.log(`hello ${this.name}`);
+    },
+    get hello() { // get トラップメソッド
+        return this._hello();
+    },
+}
+
+tom.hello;
+Reflect.get(tom, 'hello', bob) // 第三引数の receiver に登録されたオブジェクト(ここでは bob )が get メソッド内の this に束縛される. つまり第三引数は bind と同じ意味がある. 第三引数が省略された場合は、第一引数が第三引数のオブジェクトとして使用される
+
+```
 
 ### ReflectとProxy
 
+Reflect と Proxy を内部で同時に使用する方法
+
+内部メソッドとの関係性
+
+| 内部メソッド | Reflect | Proxy |
+| - | - | - |
+| [[Get]] | get | get |
+| [[Set]] | set | set |
+| [[Delete]] | deleteProperty | deleteProperty |
+| [[Construct]] | construct | construct |
+
+```js
+const targetObj = {
+    a: 0,
+    get value() {
+        return this.b;
+    }
+};
+
+const handler = {
+    get: function(target, prop, receiver) {
+        console.log(`[get]: ${prop}`);
+        if(target.hasOwnProperty(prop)) {
+            return target[prop]; // return Reflect.get(target, prop, receiver);
+        } else {
+            return -1;
+        }
+    }
+}
+
+const pxy = new Proxy(targetObj, handler);
+console.log(pxy.value); // getter 経由なのでログが出力される
+console.log(targetObj.b);
+console.log(pxy.b);
+```
+
 ### WeakMap
+
+WeakMap とは 弱い参照でオブジェクトを保持するコレクション
+
+キーは必ずオブジェクト
+
+```js
+const wm = new WeakMap();
+
+let o = {};
+wm.set(o, 'value1');
+
+o = null;
+
+o = {}; // 上の方で let o = {} と定義した o とはメモリ番地の異なる別物 なぜなら一度 null が代入された段階で WeakMap においては GC(ガベージコレクション) されるから
+
+console.log(wm.get(o));
+
+console.log(wm.delete(o));
+console.log(wm.get(o));
+
+```
 
 ### WeakMap と プライベート変数
 
+```js
+export class Person {
+    constructor(name) {
+        this._name = name; // プライベート変数
+        wm.set(this, {
+            name
+        });
+    }
+
+    hello() {
+        console.log(`hello ${wm.get(this).name}`);
+    }
+}
+```
+
+```js
+import { Person } from './Person.js';
+
+const tim = new Person('Tim');
+const bob = new Person('Bob');
+tim.hello();
+bob.hello();
+
+```
+
 ### JSON
+
+JSON はあくまで文字列
+
+`JSON.parse`
+
+JSON -> Object
+
+`JSON.stringify`
+
+Object -> JSON
+
+```js
+const obj = {a: 0, b: 1, c: 2};
+
+function replacer(prop, value) {
+    if(value < 1) {
+        return;
+    }
+    return value;
+}
+
+const json = JSON.stringify(obj, ["a", "b"]); // オブジェクトから文字列に変換する
+console.log(typeof json);
+
+const obj2 = JSON.parse(json);
+console.log(obj2);
+```
 
 ### Strage
 
-### Array
+Strage ブラウザの保存領域にデータを格納するためのオブジェクト -> localStrage
+
+開発者ツールの Local Strage で保存された値が確認できる
+
+もし使用できるメソッドを忘れてしまった時は `localStrage.__proto__` 内を参照すれば使用可能なメソッドやプロパティを参照できる
 
 ```js
+localStrage.setItem('key', 'value'); // 辞書のような形式でブラウザの保存領域に値を格納することができる
 
+const result = localStrage.getItem('key'); // 格納した値を取得することができる
+console.log(result);
 ```
+
+JSON と localStrage 組み合わせた例
+
+```js
+const obj = {a: 0};
+const json = JSON.stringify(obj);
+localStrage.setItem('key', json);
+const result = localStrage.getItem('key');
+console.log(result);
+console.log('end');
+```
+
+### Array
+
+...arry を使うと配列を展開できる 配列の連結なんかに多用される
+
+配列の要素のそれぞれに対して操作をしたい時は forEach メソッド を使用する
+
+forEach
+
+```js
+const arry = [1,2,3,4,5];
+
+// 全ての配列の要素を出力
+arry.forEach(function(v, i, arry) {
+    console.log(v);
+})
+```
+
+配列の要素の値を元にして新しい配列を作成したいときは Map メソッドを使用します
+
+map
+
+```js
+const arry = [1,2,3,4,5];
+
+// 全ての配列の要素に対して2倍
+const newArry = arry.map(function(v, i, arry) {
+    console.log(v);
+    return v * 2;
+})
+
+console.log(newArry);
+```
+
+filter
+
+```js
+const arry = [1,2,3,4,5];
+
+// 1 以上の値を持つ配列の要素のみを返す
+const filterArry = arry.filter(function(v, i, arry) {
+    return i >= 1;
+})
+```
+
+reduce は配列の要素1つ1つに対し処理を行い最終的に1つの値にまとめる役割を持つ関数
+
+第一引数にコールバック関数、第二引数に初期値を取ります。
+
+コールバック関数の第一引数 accu に対し前のループの戻り値が引数として渡ります ループの最後に返る値が関数の戻り値になります。
+
+また、コールバック関数の台に引数 curr に対し配列の要素が1つずつ渡ります。
+
+reduce
+
+```js
+const arry = [1,2,3,4,5];
+
+const result = arry.reduce(function(accu, curr) {
+    console.log(accu, curr)
+    return accu + curr;
+}, 0);
+
+console.log(result);
+```
+
+JavaScript を関数型で書きたい場合は forEach map filter reduce の4つの配列操作関数の書き方を押さえる必要がある
